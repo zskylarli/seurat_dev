@@ -13,6 +13,7 @@ DietSeurat(
   assays = NULL,
   dimreducs = NULL,
   graphs = NULL,
+  images = NULL,
   misc = TRUE
 )
 }
@@ -34,6 +35,8 @@ remove all DimReducs)}
 
 \item{graphs}{Only keep a subset of Graphs specified here (if NULL, remove
 all Graphs)}
+
+\item{images}{Only keep a subset of the images specified here}
 
 \item{misc}{Preserve the \code{misc} slot; default is \code{TRUE}}
 }

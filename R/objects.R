@@ -454,6 +454,7 @@ CreateSCTAssayObject <- function(
 #' remove all DimReducs)
 #' @param graphs Only keep a subset of Graphs specified here (if NULL, remove
 #' all Graphs)
+#' @param images Only keep a subset of the images specified here
 #' @param misc Preserve the \code{misc} slot; default is \code{TRUE}
 #'
 #' @export
@@ -468,6 +469,7 @@ DietSeurat <- function(
   assays = NULL,
   dimreducs = NULL,
   graphs = NULL,
+  images = NULL,
   misc = TRUE
 ) {
   object <- UpdateSlots(object = object)
@@ -520,6 +522,15 @@ DietSeurat <- function(
   objects.to.remove <- all.objects[!all.objects %in% c(dimreducs, graphs)]
   for (ob in objects.to.remove) {
     object[[ob]] <- NULL
+  }
+
+  # remove unspecified images
+  current.images <- Images(object)
+  print(paste("CUrrent imgs", current.images))
+  images.to.remove <- current.images[!current.images %in% images]
+  print(paste("imgs to remove", images.to.remove))
+  for (i in images.to.remove) {
+      object[[i]] <- NULL
   }
   return(object)
 }
