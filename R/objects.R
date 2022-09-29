@@ -526,9 +526,7 @@ DietSeurat <- function(
 
   # remove unspecified images
   current.images <- Images(object)
-  print(paste("CUrrent imgs", current.images))
   images.to.remove <- current.images[!current.images %in% images]
-  print(paste("imgs to remove", images.to.remove))
   for (i in images.to.remove) {
       object[[i]] <- NULL
   }
