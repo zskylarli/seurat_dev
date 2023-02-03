@@ -71,7 +71,7 @@ Imports:
     sctransform (>= 0.3.3),
     SeuratObject (>= 4.1.0),
     shiny,
-    spatstat.core,
+    spatstat.explore,
     spatstat.geom,
     stats,
     tibble,
