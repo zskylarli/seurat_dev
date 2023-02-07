@@ -1646,7 +1646,7 @@ NNHelper <- function(data, query = data, k, method, cache.index = FALSE, ...) {
 # @keywords graph network igraph mvtnorm simulation
 #
 # @importFrom leiden leiden
-#' @importFrom reticulate py_module_available
+# @importFrom reticulate py_module_available
 #' @importFrom igraph graph_from_adjacency_matrix graph_from_adj_list
 #
 # @author Tom Kelly
@@ -1678,7 +1678,7 @@ RunLeiden <- function(
   if (packageVersion("leiden") < "0.3.1") {
     stop("Leiden clustering requires leiden 0.3.1 or greater")
   }
-  if (!py_module_available(module = 'leidenalg')) {
+  if (!reticulate::py_module_available(module = 'leidenalg')) {
     stop(
       "Cannot find Leiden algorithm, please install through pip (e.g. pip install leidenalg).",
       call. = FALSE
