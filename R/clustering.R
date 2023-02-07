@@ -1645,7 +1645,7 @@ NNHelper <- function(data, query = data, k, method, cache.index = FALSE, ...) {
 #
 # @keywords graph network igraph mvtnorm simulation
 #
-#' @importFrom leiden leiden
+# @importFrom leiden leiden
 #' @importFrom reticulate py_module_available
 #' @importFrom igraph graph_from_adjacency_matrix graph_from_adj_list
 #
@@ -1671,6 +1671,13 @@ RunLeiden <- function(
   random.seed = 0,
   n.iter = 10
 ) {
+  rlang::check_installed(
+    pkg = "leiden",
+    reason = "for clustering using the leiden algorithm"
+  )
+  if (packageVersion("leiden") < "0.3.1") {
+    stop("Leiden clustering requires leiden 0.3.1 or greater")
+  }
   if (!py_module_available(module = 'leidenalg')) {
     stop(
       "Cannot find Leiden algorithm, please install through pip (e.g. pip install leidenalg).",
@@ -1702,7 +1709,7 @@ RunLeiden <- function(
     stop("Method for Leiden must be either 'matrix' or igraph'")
   )
   #run leiden from CRAN package (calls python with reticulate)
-  partition <- leiden(
+  partition <- leiden::leiden(
     object = input,
     partition_type = partition.type,
     initial_membership = initial.membership,
@@ -1758,5 +1765,3 @@ RunModularityClustering <- function(
   )
   return(clusters)
 }
-
-

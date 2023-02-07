@@ -47,7 +47,6 @@ Imports:
     irlba,
     jsonlite,
     KernSmooth,
-    leiden (>= 0.3.1),
     lmtest,
     MASS,
     Matrix (>= 1.5-0),
@@ -98,7 +97,7 @@ Collate:
     'tree.R'
     'utilities.R'
     'zzz.R'
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
 Encoding: UTF-8
 Suggests:
     ape,
@@ -123,6 +122,7 @@ Suggests:
     metap,
     enrichR,
     mixtools,
+    leiden (>= 0.3.1),
     ggrastr,
     data.table,
     R.utils
