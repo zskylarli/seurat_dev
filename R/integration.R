@@ -147,8 +147,10 @@ FindIntegrationAnchors <- function(
   nn.method = "annoy",
   n.trees = 50,
   eps = 0,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 ) {
+
   normalization.method <- match.arg(arg = normalization.method)
   reduction <- match.arg(arg = reduction)
   if (reduction == "rpca") {
@@ -310,7 +312,7 @@ FindIntegrationAnchors <- function(
     }
   }
   # determine all anchors
-  anchoring.fxn <- function(row) {
+  anchoring.fxn <- function(row, ...) {
     i <- combinations[row, 1]
     j <- combinations[row, 2]
     object.1 <- DietSeurat(
@@ -449,20 +451,78 @@ FindIntegrationAnchors <- function(
       eps = eps,
       verbose = verbose
     )
+
+    anchor.args  <- list(...)
+    if ('supervised.filter' %in% names(anchor.args$cl.args) && anchor.args$cl.args$supervised.filter == TRUE) {
+      if(!'celltype.obj1' %in% names(anchor.args$cl.args) && !'celltype.obj2' %in% names(anchor.args$cl.args)) {
+        stop("Column names for cell type in metadata must be provided when using supervised anchor filtering")
+      } else if (!'celltype.obj2' %in% names(anchor.args$cl.args)) {
+        anchor.args$cl.args$celltype.obj2  <- anchor.args$cl.args$celltype.obj1
+      }
+
+      processCellTypeName <- function(celltype) {
+        celltype <- tolower(celltype) # Convert to lowercase
+        celltype <- gsub(" ", "", celltype) # Remove spaces
+        celltype <- gsub("cell[s]*", "", celltype) # Remove 'cell' or 'cells'
+        return(celltype)
+      }
+
+      initial_num_anchors <- nrow(anchors)
+
+      # Initialize an empty list to store filtered anchors
+      filtered_anchors_list <- list()
+
+      for (k in 1:nrow(anchors)) {
+        original_idx1  <- anchors[k, 1]
+        original_idx2  <- anchors[k, 2]
+
+        celltype1 <- anchor.args$cl.args$object@meta.data[original_idx1, anchor.args$cl.args$celltype.obj1]
+        celltype2 <- anchor.args$cl.args$object@meta.data[original_idx2, anchor.args$cl.args$celltype.obj2]
+
+        celltype1 <- processCellTypeName(celltype1)
+        celltype2 <- processCellTypeName(celltype2)
+
+        if (celltype1 == celltype2) {
+          # Keep the anchor
+          filtered_anchors_list[[length(filtered_anchors_list) + 1]] <- anchors[k, , drop = FALSE]
+        }
+      }
+
+      # Convert the list of filtered anchors back to a matrix
+      if (length(filtered_anchors_list) > 0) {
+        filtered_anchors <- do.call(rbind, filtered_anchors_list)
+      } else {
+        stop("No anchors remained after supervised filtering")
+      }
+
+      # Update anchors with filtered anchors
+      anchors <- filtered_anchors
+
+      final_num_anchors <- nrow(anchors)
+      num_filtered_out <- initial_num_anchors - final_num_anchors
+
+      if (verbose) {
+        message("Filtered out ", num_filtered_out, " anchors, keeping ", final_num_anchors, " anchors")
+      }
+    }
+
     anchors[, 1] <- anchors[, 1] + offsets[i]
     anchors[, 2] <- anchors[, 2] + offsets[j]
     return(anchors)
   }
+  anchor.args <- list(...)
   if (nbrOfWorkers() == 1) {
     all.anchors <- pblapply(
       X = 1:nrow(x = combinations),
-      FUN = anchoring.fxn
+      FUN = anchoring.fxn,
+      cl.args = anchor.args
     )
   } else {
     all.anchors <- future_lapply(
       X = 1:nrow(x = combinations),
       FUN = anchoring.fxn,
-      future.seed = TRUE
+      future.seed = TRUE,
+      cl.args = anchor.args
     )
   }
   all.anchors <- do.call(what = 'rbind', args = all.anchors)
@@ -3908,7 +3968,8 @@ FindAnchors_v3 <- function(
   nn.idx2 = NULL,
   eps = 0,
   projected = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 ) {
   # compute local neighborhoods, use max of k.anchor and k.score if also scoring to avoid
   # recomputing neighborhoods
@@ -4008,7 +4069,8 @@ FindAnchors_v5 <- function(
   nn.idx2 = NULL,
   eps = 0,
   projected = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 ) {
   ref.assay <- assay[1]
   query.assay <- assay[2]
@@ -4083,7 +4145,8 @@ FindAnchors <- function(
   nn.idx2 = NULL,
   eps = 0,
   projected = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 ) {
   if (inherits(x = object.pair[[assay[1]]], what = 'Assay')) {
     FindAnchors.function <- FindAnchors_v3
@@ -4111,13 +4174,13 @@ FindAnchors <- function(
     nn.idx2 = nn.idx2,
     eps = eps,
     projected = projected,
-    verbose = verbose
+    verbose = verbose,
+    ...
   )
   return(anchors)
 }
 
 # Find Anchor pairs
-#
 FindAnchorPairs <- function(
   object,
   integration.name = 'integrated',

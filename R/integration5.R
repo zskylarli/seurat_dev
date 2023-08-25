@@ -173,7 +173,8 @@ attr(x = HarmonyIntegration, which = 'Seurat.method') <- 'integration'
 #' obj <- IntegrateLayers(object = obj, method = CCAIntegration, 
 #'   orig.reduction = "pca", new.reduction = 'integrated.cca', 
 #'   assay = "SCT", verbose = FALSE)
-#'
+#'}
+#' 
 CCAIntegration <- function(
     object = NULL,
     assay = NULL,
@@ -234,6 +235,7 @@ CCAIntegration <- function(
   }
   }
 
+  additional_args <- list(...)
   anchor <- FindIntegrationAnchors(object.list = object.list,
                                    anchor.features = features,
                                    scale = FALSE,
@@ -243,6 +245,7 @@ CCAIntegration <- function(
                                    k.filter = k.filter,
                                    reference = reference,
                                    verbose = verbose,
+                                   object=additional_args$org_object,
                                    ...
   )
   anchor@object.list <- lapply(anchor@object.list, function(x) {
@@ -357,6 +360,7 @@ RPCAIntegration <- function(
       suppressWarnings(object.list[[i]][['RNA']]$counts <- NULL)
     }
   }
+  additional_args <- list(...)
   anchor <- FindIntegrationAnchors(object.list = object.list,
                                    anchor.features = features,
                                    scale = FALSE,
@@ -366,6 +370,7 @@ RPCAIntegration <- function(
                                    k.filter = k.filter,
                                    reference = reference,
                                    verbose = verbose,
+                                   object=additional_args$org_object,
                                    ...
   )
   slot(object = anchor, name = "object.list") <- lapply(
@@ -461,6 +466,7 @@ JointPCAIntegration <- function(
     }
   }
 
+  additional_args <- list(...)
   anchor <- FindIntegrationAnchors(object.list = object.list,
                                    anchor.features = features.diet,
                                    scale = FALSE,
@@ -482,7 +488,8 @@ JointPCAIntegration <- function(
                                        sd.weight = sd.weight,
                                        sample.tree = sample.tree,
                                        preserve.order = preserve.order,
-                                       verbose = verbose
+                                       verbose = verbose,
+                                       object=additional_args$org_object
   )
   output.list <- list(object_merged[[new.reduction]])
   names(output.list) <- c(new.reduction)
@@ -619,6 +626,7 @@ IntegrateLayers <- function(
     scale.layer = scale.layer,
     features = features,
     groups = groups,
+    org_object = object,
     ...
   )
   for (i in names(x = value)) {
