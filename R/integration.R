@@ -471,6 +471,10 @@ FindIntegrationAnchors <- function(
 
       # Initialize an empty list to store filtered anchors
       filtered_anchors_list <- list()
+      mismatching_celltypes <- data.frame(original_idx1 = integer(0),
+                                    original_idx2 = integer(0),
+                                    celltype1 = character(0),
+                                    celltype2 = character(0))
 
       for (k in 1:nrow(anchors)) {
         original_idx1  <- anchors[k, 1]
@@ -485,8 +489,18 @@ FindIntegrationAnchors <- function(
         if (celltype1 == celltype2) {
           # Keep the anchor
           filtered_anchors_list[[length(filtered_anchors_list) + 1]] <- anchors[k, , drop = FALSE]
+        } else {
+          # Store mismatching cell type labels
+          mismatching_celltypes <- rbind(mismatching_celltypes, 
+                                   data.frame(original_idx1 = original_idx1,
+                                              original_idx2 = original_idx2,
+                                              celltype1 = celltype1,
+                                              celltype2 = celltype2))
         }
       }
+
+      # Write mismatching celltype to csv file
+      write.csv(mismatching_celltypes, "output/mismatching_celltypes.csv", row.names = FALSE)
 
       # Convert the list of filtered anchors back to a matrix
       if (length(filtered_anchors_list) > 0) {
@@ -537,6 +551,7 @@ FindIntegrationAnchors <- function(
                     anchor.features = anchor.features,
                     command = command
   )
+
   return(anchor.set)
 }
 

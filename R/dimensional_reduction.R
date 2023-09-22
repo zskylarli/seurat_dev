@@ -627,6 +627,28 @@ RunCCA.Seurat <- function(
     num.cc = num.cc,
     verbose = verbose,
   )
+
+  # SKYLAR'S DEBUG
+  # Create a Seurat object using the CCA embeddings
+  cca_obj <- CreateSeuratObject(counts = cca_result$ccv)
+
+  # Scale the data
+  cca_obj <- ScaleData(cca_obj)
+
+  # Run UMAP on the Seurat object
+  cca_obj <- RunUMAP(cca_obj, dims = 1:20)
+
+  # Plot the UMAP embeddings
+  DimPlot(cca_obj)
+
+  # # Create a metadata column to indicate cells that are part of filtered anchors
+  # combined_object$in_filtered_anchors <- FALSE
+  # combined_object$in_filtered_anchors[as.numeric(anchors[, 1])] <- TRUE
+  # combined_object$in_filtered_anchors[as.numeric(anchors[, 2])] <- TRUE
+
+  # # Plot UMAP and color by filtered anchors
+  # DimPlot(object = combined_object, group.by = "in_filtered_anchors", label = TRUE)
+
   if (verbose) {
     message("Merging objects")
   }
