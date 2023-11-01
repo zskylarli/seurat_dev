@@ -3,7 +3,6 @@
 \name{LeverageScore}
 \alias{LeverageScore}
 \alias{LeverageScore.default}
-\alias{LeverageScore.DelayedMatrix}
 \alias{LeverageScore.StdAssay}
 \alias{LeverageScore.Assay}
 \alias{LeverageScore.Seurat}
@@ -18,18 +17,6 @@ LeverageScore(object, ...)
   method = CountSketch,
   eps = 0.5,
   seed = 123L,
-  verbose = TRUE,
-  ...
-)
-
-\method{LeverageScore}{DelayedMatrix}(
-  object,
-  nsketch = 5000L,
-  ndims = NULL,
-  method = CountSketch,
-  eps = 0.5,
-  seed = 123L,
-  block.size = 1e+08,
   verbose = TRUE,
   ...
 )
@@ -81,20 +68,31 @@ LeverageScore(object, ...)
 
 \item{...}{Arguments passed to other methods}
 
-\item{nsketch}{A positive integer. The number of sketches to be used in the approximation. 
+\item{nsketch}{A positive integer. The number of sketches to be used in the approximation.
 Default is 5000.}
 
-\item{ndims}{A positive integer or NULL. The number of dimensions to use. If NULL, the number 
+\item{ndims}{A positive integer or NULL. The number of dimensions to use. If NULL, the number
 of dimensions will default to the number of columns in the object.}
 
 \item{method}{The sketching method to use, defaults to CountSketch.}
 
-\item{eps}{A numeric. The error tolerance for the approximation in Johnson–Lindenstrauss embeddings, 
+\item{eps}{A numeric. The error tolerance for the approximation in Johnson–Lindenstrauss embeddings,
 defaults to 0.5.}
 
 \item{seed}{A positive integer. The seed for the random number generator, defaults to 123.}
 
 \item{verbose}{Print progress and diagnostic messages}
+
+\item{vf.method}{VariableFeatures method}
+
+\item{layer}{layer to use}
+
+\item{assay}{assay to use}
+
+\item{var.name}{name of slot to store leverage scores}
+
+\item{over.write}{whether to overwrite slot that currently stores leverage scores. Defaults
+to FALSE, in which case the 'var.name' is modified if it already exists in the object}
 }
 \description{
 This function computes the leverage scores for a given object

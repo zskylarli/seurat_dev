@@ -32,6 +32,10 @@ and the default is RNA}
 \item{clip.range}{Numeric of length two specifying the min and max values the
 Pearson residual will be clipped to}
 
+\item{reference.SCT.model}{reference.SCT.model If a reference SCT model should be used
+for calculating the residuals. When set to not NULL, ignores the `SCTModel`
+paramater.}
+
 \item{replace.value}{Recalculate residuals for all features, even if they are
 already present. Useful if you want to change the clip.range.}
 
@@ -47,12 +51,6 @@ features in its scale.data
 }
 \description{
 This function calls sctransform::get_residuals.
-}
-\examples{
-data("pbmc_small")
-pbmc_small <- SCTransform(object = pbmc_small, variable.features.n = 20)
-pbmc_small <- GetResidual(object = pbmc_small, features = c('MS4A1', 'TCL1A'))
-
 }
 \seealso{
 \code{\link[sctransform]{get_residuals}}

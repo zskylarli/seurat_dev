@@ -572,6 +572,8 @@ RunCCA.Seurat <- function(
   verbose = TRUE,
   ...
 ) {
+  op <- options(Seurat.object.assay.version = "v3", Seurat.object.assay.calcn = FALSE)
+  on.exit(expr = options(op), add = TRUE)
   assay1 <- assay1 %||% DefaultAssay(object = object1)
   assay2 <- assay2 %||% DefaultAssay(object = object2)
   if (assay1 != assay2) {
@@ -671,7 +673,8 @@ RunCCA.Seurat <- function(
     warning("Some cells removed after object merge due to minimum feature count cutoff")
   }
   combined.scale <- cbind(data1,data2)
-  combined.object <- SetAssayData(object = combined.object,new.data = combined.scale, slot = "scale.data")
+  combined.object <- SetAssayData(object = combined.object, new.data = combined.scale, slot = "scale.data")
+  ## combined.object@assays$ToIntegrate@scale.data <- combined.scale
   if (renormalize) {
     combined.object <- NormalizeData(
       object = combined.object,
@@ -1123,14 +1126,16 @@ RunPCA.Seurat5 <- function(
 #' @param tsne.method Select the method to use to compute the tSNE. Available
 #' methods are:
 #' \itemize{
-#' \item{Rtsne: }{Use the Rtsne package Barnes-Hut implementation of tSNE (default)}
-# \item{tsne: }{standard tsne - not recommended for large datasets}
-#' \item{FIt-SNE: }{Use the FFT-accelerated Interpolation-based t-SNE. Based on
-#' Kluger Lab code found here: https://github.com/KlugerLab/FIt-SNE}
+#'   \item \dQuote{\code{Rtsne}}: Use the Rtsne package Barnes-Hut
+#'     implementation of tSNE (default)
+#'   \item \dQuote{\code{FIt-SNE}}: Use the FFT-accelerated Interpolation-based
+#'     t-SNE. Based on Kluger Lab code found here:
+#'     \url{https://github.com/KlugerLab/FIt-SNE}
 #' }
 #' @param dim.embed The dimensional space of the resulting tSNE embedding
 #' (default is 2). For example, set to 3 for a 3d tSNE
-#' @param reduction.key dimensional reduction key, specifies the string before the number for the dimension names. tSNE_ by default
+#' @param reduction.key dimensional reduction key, specifies the string before
+#' the number for the dimension names. \dQuote{\code{tSNE_}} by default
 #'
 #' @importFrom Rtsne Rtsne
 #'
@@ -1819,7 +1824,7 @@ RunUMAP.Seurat <- function(
     stop("Only one parameter among 'dims', 'nn.name', 'graph', or 'features' ",
          "should be used at a time to run UMAP")
   }
-  
+
   if (!is.null(x = features)) {
     data.use <- as.matrix(x = t(x = GetAssayData(object = object, slot = slot, assay = assay)[features, , drop = FALSE]))
     if (ncol(x = data.use) < n.components) {
@@ -2045,7 +2050,7 @@ CheckFeatures <- function(
     features.var <- SparseRowVar(mat = data.use[features, ], display_progress = F)
   }
   else if (inherits(x = data.use,  what = "IterableMatrix")) {
-    bp.stats <- BPCells::matrix_stats(matrix = data.use, 
+    bp.stats <- BPCells::matrix_stats(matrix = data.use,
                                       row_stats = "variance")
     features.var <- bp.stats$row_stats["variance",][features]
   }
@@ -2439,12 +2444,16 @@ PrepDR <- function(
 
 PrepDR5 <- function(object, features = NULL, layer = 'scale.data', verbose = TRUE) {
   layer <- layer[1L]
-  layer <- match.arg(arg = layer, choices = Layers(object = object))
+  olayer <- layer
+  layer <- Layers(object = object, search = layer)
+  if (is.null(layer)) {
+    abort(paste0("No layer matching pattern '", olayer, "' not found. Please run ScaleData and retry"))
+  }
+  data.use <- LayerData(object = object, layer = layer)
   features <- features %||% VariableFeatures(object = object)
   if (!length(x = features)) {
     stop("No variable features, run FindVariableFeatures() or provide a vector of features", call. = FALSE)
   }
-  data.use <- LayerData(object = object, layer = layer, features = features)
   features.var <- apply(X = data.use, MARGIN = 1L, FUN = var)
   features.keep <- features[features.var > 0]
   if (!length(x = features.keep)) {
@@ -2462,9 +2471,20 @@ PrepDR5 <- function(object, features = NULL, layer = 'scale.data', verbose = TRU
       )
     }
   }
-  # features <- features.keep
-  # features <- features[!is.na(x = features)]
-  return(LayerData(object = object, layer = layer, features = features.keep))
+  features <- features.keep
+  features <- features[!is.na(x = features)]
+  features.use <- features[features %in% rownames(data.use)]
+  if(!isTRUE(all.equal(features, features.use))) {
+    missing_features <- setdiff(features, features.use)
+    if(length(missing_features) > 0) {
+    warning_message <- paste("The following features were not available: ",
+                             paste(missing_features, collapse = ", "),
+                             ".", sep = "")
+    warning(warning_message, immediate. = TRUE)
+    }
+  }
+  data.use <- data.use[features.use, ]
+  return(data.use)
 }
 
 #' @param assay Name of Assay SPCA is being run on
@@ -2556,6 +2576,7 @@ RunSPCA.Assay <- function(
 
 #' @param features Features to compute SPCA on. If features=NULL, SPCA will be run
 #' using the variable features for the Assay.
+#' @param layer Layer to run SPCA on
 #'
 #' @rdname RunSPCA
 #' @concept dimensional_reduction

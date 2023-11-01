@@ -13,6 +13,18 @@ MVP(
   ...
 )
 }
+\arguments{
+\item{data}{Data matrix}
+
+\item{verbose}{Whether to print messages and progress bars}
+
+\item{nselect}{Number of features to select based on dispersion values}
+
+\item{mean.cutoff}{Numeric of length two specifying the min and max values}
+
+\item{dispersion.cutoff}{Numeric of length two specifying the min and max values}
+}
 \description{
 Find variable features based on mean.var.plot
 }
+\keyword{internal}

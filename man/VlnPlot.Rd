@@ -21,7 +21,7 @@ VlnPlot(
   log = FALSE,
   ncol = NULL,
   slot = deprecated(),
-  layer = "data",
+  layer = NULL,
   split.plot = FALSE,
   stack = FALSE,
   combine = TRUE,
@@ -66,6 +66,8 @@ to split by cell identity'}
 \item{ncol}{Number of columns if multiple plots are displayed}
 
 \item{slot}{Slot to pull expression data from (e.g. "counts" or "data")}
+
+\item{layer}{Layer to pull expression data from (e.g. "counts" or "data")}
 
 \item{split.plot}{plot each group of the split violin plots by multiple or
 single violin shapes.}

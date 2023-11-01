@@ -63,7 +63,8 @@ will also resize to the size(s) passed to \code{sizes.highlight}}
     \item{\code{cols.highlight}}{A vector of colors to highlight the cells as; will
 repeat to the length groups in cells.highlight}
     \item{\code{sizes.highlight}}{Size of highlighted cells; will repeat to the length
-groups in cells.highlight}
+groups in cells.highlight.  If \code{sizes.highlight = TRUE} size of all
+points will be this value.}
     \item{\code{na.value}}{Color value for NA points when using custom scale}
     \item{\code{ncol}}{Number of columns for display when combining plots}
     \item{\code{combine}}{Combine plots into a single \code{\link[patchwork]{patchwork}ed}
@@ -82,11 +83,13 @@ Returns a DimPlot colored based on whether the cells fall in clusters
 to the left or to the right of a node split in the cluster tree.
 }
 \examples{
+\dontrun{
 if (requireNamespace("ape", quietly = TRUE)) {
   data("pbmc_small")
   pbmc_small <- BuildClusterTree(object = pbmc_small, verbose = FALSE)
   PlotClusterTree(pbmc_small)
   ColorDimSplit(pbmc_small, node = 5)
+}
 }
 
 }
