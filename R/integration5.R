@@ -208,6 +208,7 @@ CCAIntegration <- function(
     verbose = TRUE,
     ...
 ) {
+  opt.args <- list(...)
   op <- options(Seurat.object.assay.version = "v3", Seurat.object.assay.calcn = FALSE)
   on.exit(expr = options(op), add = TRUE)
   normalization.method <- match.arg(arg = normalization.method)
@@ -234,6 +235,12 @@ CCAIntegration <- function(
       counts <- object[layers[i]][features, ]
     }
     object.list[[i]] <- CreateSeuratObject(counts = counts)
+    #Supervised filtering setup for v5 assays
+    if('supervised.filter' %in% names(opt.args) && opt.args$supervised.filter == TRUE) {
+      idents <- opt.args$full.obj[[opt.args$celltype.obj1]] #this only works for one common metadata label right now
+      object.list[[i]][[opt.args$celltype.obj1]] <- idents[rownames(idents) %in% colnames(object[layers[i]]), ]
+      object.list[[i]]$orig.ident <- idents[rownames(idents) %in% colnames(object[layers[i]]), ]
+    }
     if (inherits(x = object[scale.layer], what = "IterableMatrix")) {
       scale.data.layer <- as.matrix(object[scale.layer][features,
                                                           Cells(object.list[[i]])])
@@ -246,8 +253,6 @@ CCAIntegration <- function(
     object.list[[i]][['RNA']]$counts <- NULL
   }
   }
-
-  additional_args <- list(...)
   anchor <- FindIntegrationAnchors(object.list = object.list,
                                    anchor.features = features,
                                    scale = FALSE,
@@ -257,7 +262,6 @@ CCAIntegration <- function(
                                    k.filter = k.filter,
                                    reference = reference,
                                    verbose = verbose,
-                                   object=additional_args$org_object,
                                    ...
   )
   suppressWarnings({
@@ -409,7 +413,6 @@ RPCAIntegration <- function(
                                    k.filter = k.filter,
                                    reference = reference,
                                    verbose = verbose,
-                                   object=additional_args$org_object,
                                    ...
   )
   slot(object = anchor, name = "object.list") <- lapply(
@@ -629,6 +632,7 @@ IntegrateLayers <- function(
   # Run the integration method
   value <- method(
     object = object[[assay]],
+    full.obj = object,
     assay = assay,
     orig = obj.orig,
     layers = layers,

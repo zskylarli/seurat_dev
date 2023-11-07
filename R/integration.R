@@ -150,7 +150,6 @@ FindIntegrationAnchors <- function(
   verbose = TRUE,
   ...
 ) {
-
   normalization.method <- match.arg(arg = normalization.method)
   reduction <- match.arg(arg = reduction)
   if (reduction == "rpca") {
@@ -172,7 +171,7 @@ FindIntegrationAnchors <- function(
   )
   object.ncells <- sapply(X = object.list, FUN = function(x) dim(x = x)[2])
   if (any(object.ncells <= max(dims))) {
-    bad.obs <- which(x = object.ncells <= max(dims))
+    bad.obs <- which(x = object.ncells <= max(dims)) 
     stop("Max dimension too large: objects ", paste(bad.obs, collapse = ", "),
          " contain fewer than ", max(dims), " cells. \n Please specify a",
          " maximum dimensions that is less than the number of cells in any ",
@@ -443,7 +442,7 @@ FindIntegrationAnchors <- function(
       nn.reduction = nn.reduction,
       dims = dims,
       k.anchor = k.anchor,
-      k.filter = k.filter,
+      k.filter = k.filter, 
       k.score = k.score,
       max.features = max.features,
       nn.method = nn.method,
@@ -451,75 +450,6 @@ FindIntegrationAnchors <- function(
       eps = eps,
       verbose = verbose
     )
-
-    anchor.args  <- list(...)
-    if ('supervised.filter' %in% names(anchor.args$cl.args) && anchor.args$cl.args$supervised.filter == TRUE) {
-      if(!'celltype.obj1' %in% names(anchor.args$cl.args) && !'celltype.obj2' %in% names(anchor.args$cl.args)) {
-        stop("Column names for cell type in metadata must be provided when using supervised anchor filtering")
-      } else if (!'celltype.obj2' %in% names(anchor.args$cl.args)) {
-        anchor.args$cl.args$celltype.obj2  <- anchor.args$cl.args$celltype.obj1
-      }
-
-      processCellTypeName <- function(celltype) {
-        celltype <- tolower(celltype) # Convert to lowercase
-        celltype <- gsub(" ", "", celltype) # Remove spaces
-        celltype <- gsub("cell[s]*", "", celltype) # Remove 'cell' or 'cells'
-        return(celltype)
-      }
-
-      initial_num_anchors <- nrow(anchors)
-
-      # Initialize an empty list to store filtered anchors
-      filtered_anchors_list <- list()
-      mismatching_celltypes <- data.frame(original_idx1 = integer(0),
-                                    original_idx2 = integer(0),
-                                    celltype1 = character(0),
-                                    celltype2 = character(0))
-
-      for (k in 1:nrow(anchors)) {
-        original_idx1  <- anchors[k, 1]
-        original_idx2  <- anchors[k, 2]
-
-        celltype1 <- anchor.args$cl.args$object@meta.data[original_idx1, anchor.args$cl.args$celltype.obj1]
-        celltype2 <- anchor.args$cl.args$object@meta.data[original_idx2, anchor.args$cl.args$celltype.obj2]
-
-        celltype1 <- processCellTypeName(celltype1)
-        celltype2 <- processCellTypeName(celltype2)
-
-        if (celltype1 == celltype2) {
-          # Keep the anchor
-          filtered_anchors_list[[length(filtered_anchors_list) + 1]] <- anchors[k, , drop = FALSE]
-        } else {
-          # Store mismatching cell type labels
-          mismatching_celltypes <- rbind(mismatching_celltypes, 
-                                   data.frame(original_idx1 = original_idx1,
-                                              original_idx2 = original_idx2,
-                                              celltype1 = celltype1,
-                                              celltype2 = celltype2))
-        }
-      }
-
-      # Write mismatching celltype to csv file
-      write.csv(mismatching_celltypes, "output/mismatching_celltypes.csv", row.names = FALSE)
-
-      # Convert the list of filtered anchors back to a matrix
-      if (length(filtered_anchors_list) > 0) {
-        filtered_anchors <- do.call(rbind, filtered_anchors_list)
-      } else {
-        stop("No anchors remained after supervised filtering")
-      }
-
-      # Update anchors with filtered anchors
-      anchors <- filtered_anchors
-
-      final_num_anchors <- nrow(anchors)
-      num_filtered_out <- initial_num_anchors - final_num_anchors
-
-      if (verbose) {
-        message("Filtered out ", num_filtered_out, " anchors, keeping ", final_num_anchors, " anchors")
-      }
-    }
-
     anchors[, 1] <- anchors[, 1] + offsets[i]
     anchors[, 2] <- anchors[, 2] + offsets[j]
     return(anchors)
@@ -541,8 +471,58 @@ FindIntegrationAnchors <- function(
   }
   all.anchors <- do.call(what = 'rbind', args = all.anchors)
   all.anchors <- rbind(all.anchors, all.anchors[, c(2, 1, 3)])
-  all.anchors <- AddDatasetID(anchor.df = all.anchors, offsets = offsets, obj.lengths = objects.ncell)
+  all.anchors <- AddDatasetID(anchor.df = all.anchors, offsets = offsets, obj.lengths = objects.ncell) #something happening here 
   command <- LogSeuratCommand(object = object.list[[1]], return.command = TRUE)
+  
+  # Supervised filtering based on cell type 
+  if ('supervised.filter' %in% names(anchor.args) && anchor.args$supervised.filter == TRUE) {
+    message("supervised filtering")
+    if(!'celltype.obj1' %in% names(anchor.args) && !'celltype.obj2' %in% names(anchor.args)) {
+      stop("Column names for cell type in metadata must be provided when using supervised anchor filtering")
+    } 
+    if (!'celltype.obj2' %in% names(anchor.args)) {
+      anchor.args$celltype.obj2  <- anchor.args$celltype.obj1
+    }
+    
+    processCellTypeName <- function(celltype) {
+      celltype <- tolower(celltype) # Convert to lowercase
+      celltype <- gsub(" ", "", celltype) # Remove spaces
+      celltype <- gsub("cell[s]*", "", celltype) # Remove 'cell' or 'cells'
+      return(celltype)
+    }
+    
+    # Fetch anchors 
+    anchors <- data.frame(all.anchors)
+    # Keep track of number of anchors to begin with 
+    initial_num_anchors <- nrow(anchors)/2
+    rows_to_keep <- numeric(0)
+    for(k in 1:nrow(anchors)){
+      if(anchors$dataset1[k] == '1'){
+        celltype1 <- object.list[[1]][[]][anchors$cell1[k], anchor.args$celltype.obj1]
+      } else{
+        celltype1 <- object.list[[2]][[]][anchors$cell1[k], anchor.args$celltype.obj1]
+      }
+      if(anchors$dataset2[k] == '1'){
+        celltype2 <- object.list[[1]][[]][anchors$cell2[k], anchor.args$celltype.obj2]
+      } else{
+        celltype2 <- object.list[[2]][[]][anchors$cell2[k], anchor.args$celltype.obj2]
+      }
+      if (celltype1 == celltype2) { 
+        rows_to_keep <- c(rows_to_keep, k) 
+      }
+    }
+    
+    all.anchors <- anchors[rows_to_keep, ]
+
+    if (length(all.anchors) == 0) {
+      stop("No anchors remained after supervised filtering")
+    } 
+    final_num_anchors <- nrow(all.anchors)/2
+    filtered_num_anchors <- initial_num_anchors - final_num_anchors
+    if (verbose) {
+      message("Found ", filtered_num_anchors, " unmatched anchors, now keeping ", final_num_anchors, " anchors")
+    }
+  }
   anchor.set <- new(Class = "IntegrationAnchorSet",
                     object.list = object.list,
                     reference.objects = reference %||% seq_along(object.list),
@@ -551,7 +531,6 @@ FindIntegrationAnchors <- function(
                     anchor.features = anchor.features,
                     command = command
   )
-
   return(anchor.set)
 }
 
@@ -3853,6 +3832,7 @@ AddDatasetID <- function(
   offsets <- c(offsets, total.cells)
   row.offset <- rep.int(x = offsets[1:ndataset], times = obj.lengths)
   dataset <- rep.int(x = 1:ndataset, times = obj.lengths)
+  # skylar
   anchor.df <- data.frame(
     'cell1' = anchor.df[, 1] - row.offset[anchor.df[, 1]],
     'cell2' = anchor.df[, 2] - row.offset[anchor.df[, 2]],
@@ -3860,6 +3840,13 @@ AddDatasetID <- function(
     'dataset1' = dataset[anchor.df[, 1]],
     'dataset2' = dataset[anchor.df[, 2]]
   )
+  # anchor.df <- data.frame(
+  #   'cell1' = anchor.df[, 1],
+  #   'cell2' = anchor.df[, 2],
+  #   'score' = anchor.df[, 3],
+  #   'dataset1' = dataset[anchor.df[, 1]],
+  #   'dataset2' = dataset[anchor.df[, 2] + offsets[2]]
+  # )
   return(anchor.df)
 }
 
@@ -4950,6 +4937,7 @@ PairwiseIntegrateReference <- function(
     if (verbose) {
       message("Extracting anchors for merged samples")
     }
+
     filtered.anchors <- anchors[anchors$dataset1 %in% datasets$object1 & anchors$dataset2 %in% datasets$object2, ]
     integrated.matrix <- RunIntegration(
       filtered.anchors = filtered.anchors,
@@ -5621,6 +5609,7 @@ RunIntegration <- function(
   }
   filtered.anchors[, 1] <- cell1.offset
   filtered.anchors[, 2] <- cell2.offset
+
   integration.name <- "integrated"
   merged.obj <- SetIntegrationData(
     object = merged.obj,
